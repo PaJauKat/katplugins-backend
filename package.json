@@ -1,0 +1,25 @@
+{
+  "name": "katplugins-backend",
+  "version": "1.0.0",
+  "description": "API Backend para verificación de licencias de katPlugins",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node api/verify.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PaJauKat/katplugins-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PaJauKat/katplugins-backend/issues"
+  },
+  "homepage": "https://github.com/PaJauKat/katplugins-backend#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3"
+  }
+}
