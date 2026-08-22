@@ -66,6 +66,7 @@ export default async function handler(req, res) {
         */
 
         // 3. Verificar si es miembro de tu servidor y si tiene el rol requerido
+        console.log("Meow=", process.env.DISCORD_BOT_TOKEN);
         const memberResponse = await fetch(
             `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${userData.id}`,
             {
@@ -73,10 +74,8 @@ export default async function handler(req, res) {
             }
         );
 
-        logBlock('Respuesta del miembro en Discord', {
-            status: memberResponse.status,
-            ok: memberResponse.ok,
-        });
+        const memberData = await memberResponse.json();
+        logBlock('Detalles del miembro', memberData);
 
         if (memberResponse.status === 404) {
             const redirectUrl = `http://localhost:${localPort}/callback?status=error&reason=No_estas_en_el_servidor_de_katPlugins`;
@@ -84,8 +83,7 @@ export default async function handler(req, res) {
             return res.redirect(redirectUrl);
         }
 
-        const memberData = await memberResponse.json();
-        logBlock('Detalles del miembro', memberData);
+        
 
         const hasRole = memberData.roles && memberData.roles.includes(process.env.DISCORD_ROLE_ID);
         logBlock('¿Tiene el rol requerido?', {
