@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     try {
         // 1. Intercambiar el código por el Access Token de Discord
-        const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+        const tokenResponse = await fetch('https://discord.com/api/v10/oauth2/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
@@ -37,11 +37,15 @@ export default async function handler(req, res) {
         });
 
         const tokenData = await tokenResponse.json();
+        logBlock('Respuesta del token de Discord', tokenData);
+
+        /*
         logBlock('Respuesta del token de Discord', {
             status: tokenResponse.status,
             ok: tokenResponse.ok,
             data: tokenData,
         });
+        */
 
         if (!tokenResponse.ok) throw new Error(tokenData.error_description || 'Error de token');
 
@@ -50,11 +54,14 @@ export default async function handler(req, res) {
             headers: { Authorization: `Bearer ${tokenData.access_token}` }
         });
         const userData = await userResponse.json();
+        logBlock('Datos del usuario de Discord', userData);
+        /*
         logBlock('Datos del usuario de Discord', {
             status: userResponse.status,
             ok: userResponse.ok,
             data: userData,
         });
+        */
 
         // 3. Verificar si es miembro de tu servidor y si tiene el rol requerido
         const memberResponse = await fetch(
