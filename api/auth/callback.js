@@ -24,6 +24,8 @@ export default async function handler(req, res) {
 
     try {
         // 1. Intercambiar el código por el Access Token de Discord
+        console.log("DiscordClient=",process.env.DISCORD_CLIENT_ID)
+        console.log("DiscordClientSec=",process.env.DISCORD_CLIENT_SECRET)
         const tokenResponse = await fetch('https://discord.com/api/v10/oauth2/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
