@@ -11,18 +11,42 @@ const logBlock = (title, data) => {
 };
 
 export default async function handler(req, res) {
-    const { code, state, puerto: localPort } = req.query;
+    const { code, state: encodedState } = req.query;
+
+    if (!encodedState){
+        console.log("Falta el encodedState");
+        logBlock("Falta el encodedState", req.query)
+        return res.status(400).send("Falta el encodedState");
+    }
+
+    let javaState = null;
+    let localPort = null;
+    try {
+        const jsonData = JSON.parse(Buffer.from(encodedState, 'base64').toString())
+        javaState = jsonData.state;
+        localPort = jsonData.port;
+    } catch (error) {
+        console.error('Error al decodificar el parámetro state:', e);
+        return res.status(400).send("No se pudo parsear el State");
+    }
+    
+
 
     logBlock('Auth callback recibido', {
         code: code || null,
-        localPort: localPort || null,
-        state: state || null,
+        localPort: localPort,
+        state: javaState,
         query: req.query,
     });
 
     if (!code) {
         console.log('❌ Falta el código de autorización de Discord.');
         return res.status(400).send('Falta el código de autorización de Discord.');
+    }
+
+    if (!javaState || !localPort) {
+        console.error(`Weon falto el javaState=${javaState} o el localPort=${localPort}`);
+        return res.status(400).send(`Weon falto el javaState=${javaState} o el localPort=${localPort}`)
     }
 
     try {
@@ -90,7 +114,7 @@ export default async function handler(req, res) {
             username: userData.username
         }, process.env.JWT_SECRET, { expiresIn: '30d' })
 
-        const redirectUrl = `http://localhost:${localPort}/callback?status=success&token=${sessionToken}&state=${state}`;
+        const redirectUrl = `http://localhost:${localPort}/callback?status=success&token=${sessionToken}&state=${javaState}`;
 
         // 4. Redirigir al servidor local de Java en RuneLite con éxito
         return res.redirect(redirectUrl);
