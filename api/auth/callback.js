@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+
 
 const logBlock = (title, data) => {
     const formatted = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
@@ -9,11 +11,12 @@ const logBlock = (title, data) => {
 };
 
 export default async function handler(req, res) {
-    const { code, state: localPort } = req.query;
+    const { code, state, puerto: localPort } = req.query;
 
     logBlock('Auth callback recibido', {
         code: code || null,
         localPort: localPort || null,
+        state: state || null,
         query: req.query,
     });
 
@@ -24,8 +27,6 @@ export default async function handler(req, res) {
 
     try {
         // 1. Intercambiar el código por el Access Token de Discord
-        console.log("DiscordClient=",process.env.DISCORD_CLIENT_ID)
-        console.log("DiscordClientSec=",process.env.DISCORD_CLIENT_SECRET)
         const tokenResponse = await fetch('https://discord.com/api/v10/oauth2/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -41,14 +42,6 @@ export default async function handler(req, res) {
         const tokenData = await tokenResponse.json();
         logBlock('Respuesta del token de Discord', tokenData);
 
-        /*
-        logBlock('Respuesta del token de Discord', {
-            status: tokenResponse.status,
-            ok: tokenResponse.ok,
-            data: tokenData,
-        });
-        */
-
         if (!tokenResponse.ok) throw new Error(tokenData.error_description || 'Error de token');
 
         // 2. Obtener la identidad del usuario de Discord
@@ -57,16 +50,10 @@ export default async function handler(req, res) {
         });
         const userData = await userResponse.json();
         logBlock('Datos del usuario de Discord', userData);
-        /*
-        logBlock('Datos del usuario de Discord', {
-            status: userResponse.status,
-            ok: userResponse.ok,
-            data: userData,
-        });
-        */
+        
 
         // 3. Verificar si es miembro de tu servidor y si tiene el rol requerido
-        console.log("Meow=", process.env.DISCORD_BOT_TOKEN);
+        
         const memberResponse = await fetch(
             `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${userData.id}`,
             {
@@ -83,7 +70,7 @@ export default async function handler(req, res) {
             return res.redirect(redirectUrl);
         }
 
-        
+
 
         const hasRole = memberData.roles && memberData.roles.includes(process.env.DISCORD_ROLE_ID);
         logBlock('¿Tiene el rol requerido?', {
@@ -98,12 +85,12 @@ export default async function handler(req, res) {
             return res.redirect(redirectUrl);
         }
 
-        const redirectUrl = `http://localhost:${localPort}/callback?status=success&username=${encodeURIComponent(userData.username)}&id=${userData.id}`;
-        logBlock('Redirección final exitosa', {
-            redirectUrl,
-            username: userData.username,
-            id: userData.id,
-        });
+        const sessionToken = jwt.sign({
+            discordId: userData.id,
+            username: userData.username
+        }, process.env.JWT_SECRET, { expiresIn: '30d' })
+
+        const redirectUrl = `http://localhost:${localPort}/callback?status=success&token=${sessionToken}&state=${state}`;
 
         // 4. Redirigir al servidor local de Java en RuneLite con éxito
         return res.redirect(redirectUrl);
