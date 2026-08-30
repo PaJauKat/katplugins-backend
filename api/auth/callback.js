@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-
+import { checkDiscordRole } from '../_lib/discord.js';
 
 const logBlock = (title, data) => {
     const formatted = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
@@ -77,30 +77,25 @@ export default async function handler(req, res) {
         
 
         // 3. Verificar si es miembro de tu servidor y si tiene el rol requerido
-        
-        const memberResponse = await fetch(
-            `https://discord.com/api/v10/guilds/${process.env.DISCORD_GUILD_ID}/members/${userData.id}`,
-            {
-                headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` }
+        let hasRole = false;
+        let memberData = null;
+        try {
+            const roleCheck = await checkDiscordRole(userData.id);
+            hasRole = roleCheck.hasRole;
+            memberData = roleCheck.memberData;
+        } catch (error) {
+            if (error.code === 'NOT_IN_GUILD') {
+                const redirectUrl = `http://localhost:${localPort}/callback?status=error&reason=No_estas_en_el_servidor_de_katPlugins`;
+                console.log('🚫 Usuario no está en el servidor:', redirectUrl);
+                return res.redirect(redirectUrl);
             }
-        );
-
-        const memberData = await memberResponse.json();
-        logBlock('Detalles del miembro', memberData);
-
-        if (memberResponse.status === 404) {
-            const redirectUrl = `http://localhost:${localPort}/callback?status=error&reason=No_estas_en_el_servidor_de_katPlugins`;
-            console.log('🚫 Usuario no está en el servidor:', redirectUrl);
-            return res.redirect(redirectUrl);
+            throw error;
         }
-
-
-
-        const hasRole = memberData.roles && memberData.roles.includes(process.env.DISCORD_ROLE_ID);
+        
         logBlock('¿Tiene el rol requerido?', {
             hasRole,
             requiredRoleId: process.env.DISCORD_ROLE_ID,
-            memberRoles: memberData.roles || [],
+            memberRoles: memberData?.roles || [],
         });
 
         if (!hasRole) {

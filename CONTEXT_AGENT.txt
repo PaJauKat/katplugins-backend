@@ -1,0 +1,28 @@
+[CONTEXTO TÉCNICO DE PROYECTO]
+Estoy trabajando en un ecosistema de plugins para RuneLite compuesto por dos módulos principales: KatLoader y KatPlugin.
+
+1. Arquitectura & Componentes:
+   - KatLoader: Módulo en Java/RuneLite encargado de verificar credenciales JWT locales e inyectar/cargar el resto de plugins dinámicamente.
+   - KatPlugin: Plugin de RuneLite con UI en Java Swing que administra el estado de sesión y el flujo interactivo de autenticación.
+   - Backend (Vercel): API serverless alojada en `api.pajau.cl`.
+   - Autenticación: OAuth2 con Discord + Validación de roles de usuario en servidor de Discord + JWT.
+   - Servidor Local HTTP: Levanta temporalmente en RuneLite en `http://localhost:8888` para capturar la redirección del navegador.
+
+2. Flujo de Autenticación:
+   - Verificación pasiva: KatLoader consulta `api.pajau.cl/api/auth/verify` con el JWT guardado localmente. Si es válido, carga los plugins.
+   - Verificación interactiva:
+     1. Usuario presiona "Authenticate with Discord" en KatPlugin UI.
+     2. KatPlugin inicia HTTP server en `localhost:8888`.
+     3. Abre navegador en `https://api.pajau.cl/api/auth/login`.
+     4. Redirección OAuth2 -> Discord (`/api/auth/callback`).
+     5. Backend (Vercel) intercambia 'code', verifica Rol de Discord y genera JWT.
+     6. Backend redirige a `http://localhost:8888/callback?token=JWT`.
+     7. KatPlugin captura token, guarda localmente, apaga puerto 8888 y notifica a KatLoader para inyectar plugins.
+
+3. Endpoints Principales:
+   - GET /api/auth/login (Backend Vercel)
+   - GET /api/auth/callback (Backend Vercel)
+   - GET/POST /api/auth/verify (Backend Vercel)
+   - GET http://localhost:8888/callback (Servidor embebido RuneLite)
+
+Instrucción: Mantén presente esta arquitectura para resolver dudas, refactorizar código Java/Node.js, depurar fallos de OAuth2/JWT o proponer mejoras en el flujo de carga.
