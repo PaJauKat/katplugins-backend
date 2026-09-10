@@ -18,6 +18,8 @@ export default async function handler(req, res) {
             return res.status(401).json({ valid: false, error: "Token inválido: falta discordId" });
         }
 
+        return res.status(200).json({ valid: true, userData: decoded });
+
         // Validar en tiempo real si el usuario aún tiene el rol en Discord
         const { hasRole } = await checkDiscordRole(decoded.discordId);
 
